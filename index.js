@@ -1,6 +1,21 @@
 const express = require("express");
 const app = express();
+const mongoose = require("mongoose");
+const Note = require("./models/notes");
+
+
+//Midleware
 app.use(express.json());
+
+
+//Connecting database
+mongoose.connect("mongodb://localhost:27017/notes-app-2", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+.then(() => console.log("Database connected successfully"))
+.catch(err => console.log(err))
+
 
 
 
@@ -61,6 +76,7 @@ app.put("/notes/:noteId", (req, res) => {
         if(!isAllowed){
             return res.status(400).send("Invalid operation");
         }
+        
         if(note){
 
             notes = notes.map(note => {
