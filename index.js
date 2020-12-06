@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 const Note = require("./models/notes");
+const {check, validationResult } = require("express-validator");
 
 
 //Midleware
@@ -19,49 +20,79 @@ mongoose.connect("mongodb://localhost:27017/notes-app-2", {
 
 
 
-let notes = [
-    {
-        id: 101,
-        title: "Notes Title 1",
-        description: "Notes Description 1"
-    },
-    {
-        id: 102,
-        title: "Notes Title 2",
-        description: "Notes Description 2"
-    },
 
-]
-
-
+//Root server path
 app.get("/", (req, res) => {
     res.send("Welcome Node Js Rest Api server")
 })
 
-app.get("/notes", (req, res) => {
-    if(notes.length){
-        return res.send(notes);
+
+// Get all Notes
+app.get("/notes", async(req, res) => {
+
+    try {
+
+        const notes = await Note.find()
+        res.send(notes); 
+
+    } catch (error) {
+
+        res.status(500).send(error)
     }
-    res.send("Notes Not Found")
+
 })
 
-app.post("/notes", (req, res) => {
 
-    const note = req.body;
-    notes = [...notes, note];
-    res.send(notes);
-})
+// Adding Note
+app.post("/notes",
+[
+    check("title", "Title is required by express validator").notEmpty(),
+    check("description", "Description is required by express validator").notEmpty()
+],
+ async(req, res) => {
 
-app.get("/notes/:noteId", (req, res) => {
-
-    const noteId = parseInt(req.params.noteId);
-    const note = notes.find(note => note.id === noteId);
-    if(note){
-        return res.send(note)
+    const errors = validationResult(req);
+    if(!errors.isEmpty()){
+        res.status(400).send(errors.array())
     }
-    res.status(404).send("Note not found")
+
+    try {
+        const note = new Note(req.body);
+        await note.save();
+        res.send(note);
+
+    } catch (error) {
+
+        res.status(400).send(error)
+    }
+    
+})
+
+
+//Get Sinlge Note
+app.get("/notes/:noteId",
+check("noteId", "Note not Found").isMongoId(),
+async(req, res) => {
+    const errors = validationResult(req);
+    if(!errors.isEmpty()) return res.status(400).send(errors.array())
+
+    try {
+
+        const id = req.params.noteId;
+        const note = await Note.findById(id);
+        if(!note) return res.status(404).send("Note Note found")
+        res.send(note);
+
+    } catch (error) {
+
+        res.status(500).send(error)
+    }
+
 
 })
+
+
+
 
 app.put("/notes/:noteId", (req, res) => {
     const noteId = parseInt(req.params.noteId);
@@ -98,6 +129,12 @@ app.put("/notes/:noteId", (req, res) => {
 
 })
 
+
+
+
+
+
+
 app.delete("/notes/:noteId", (req, res) => {
     const noteId = parseInt(req.params.noteId)
     const note = notes.find(note => note.id === noteId)
@@ -110,10 +147,15 @@ app.delete("/notes/:noteId", (req, res) => {
     }
 })
 
+
+
+
 app.get("*", (req, res) => {
 
     res.send("404 Not Found")
 })
+
+
 
 // Server creation
 app.listen(8080, () => {
