@@ -12,7 +12,8 @@ app.use(express.json());
 //Connecting database
 mongoose.connect("mongodb://localhost:27017/notes-app-2", {
     useNewUrlParser: true,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
+    useFindAndModify: false
 })
 .then(() => console.log("Database connected successfully"))
 .catch(err => console.log(err))
@@ -93,38 +94,69 @@ async(req, res) => {
 
 
 
+//Update Note
+app.put("/notes/:noteId",
+[
+    check("noteId", "Note not found").isMongoId(),
+    check("title", "Title is req").optional().notEmpty(),
+    check("description", "Description is req").optional().notEmpty(),
+],
+async(req, res) => {
 
-app.put("/notes/:noteId", (req, res) => {
-    const noteId = parseInt(req.params.noteId);
-    const noteInput = req.body;
-    const gotNoteInput = Object.keys(noteInput);
+    const id = req.params.noteId;
+
+    const gotNoteInput = Object.keys(req.body);
     const allowedUpdates = ["title", "description"];
+    const isAllowed = gotNoteInput.every(update => allowedUpdates.includes(update))
+    if(!isAllowed) return res.status(400).send("Invalid updates")
+
+    const errors = validationResult(req);
+    if(!errors.isEmpty())return res.status(400).send(errors.array())
 
     try {
-        const isAllowed = gotNoteInput.every(update => allowedUpdates.includes(update))
-        const note = notes.find(note => note.id === noteId)
-        
-        if(!isAllowed){
-            return res.status(400).send("Invalid operation");
-        }
-        
-        if(note){
 
-            notes = notes.map(note => {
-                if(note.id === noteId){
-                    return {...note, ...noteInput};
-                }else {
-                    return note;
-                }
-            })
-            return res.send(notes)
-
-        }else {
-            return res.status(404).send("Note Not Found");
-        }
+        const note = await Note.findByIdAndUpdate(id, req.body, {
+            new: true,
+            runValidators: true
+        })
+        if(!note) return res.status(404).send("Note not found");
+        res.send(note)
+        
     } catch (error) {
-        res.status(500).send("Internal Server Error")
+
+        res.status(500).send(error);
     }
+
+    // const noteId = parseInt(req.params.noteId);
+    // const noteInput = req.body;
+    // const gotNoteInput = Object.keys(noteInput);
+    // const allowedUpdates = ["title", "description"];
+
+    // try {
+    //     const isAllowed = gotNoteInput.every(update => allowedUpdates.includes(update))
+    //     const note = notes.find(note => note.id === noteId)
+        
+    //     if(!isAllowed){
+    //         return res.status(400).send("Invalid operation");
+    //     }
+        
+    //     if(note){
+
+    //         notes = notes.map(note => {
+    //             if(note.id === noteId){
+    //                 return {...note, ...noteInput};
+    //             }else {
+    //                 return note;
+    //             }
+    //         })
+    //         return res.send(notes)
+
+    //     }else {
+    //         return res.status(404).send("Note Not Found");
+    //     }
+    // } catch (error) {
+    //     res.status(500).send("Internal Server Error")
+    // }
 
 
 })
@@ -134,7 +166,7 @@ app.put("/notes/:noteId", (req, res) => {
 
 
 
-
+// Delete Note
 app.delete("/notes/:noteId", (req, res) => {
     const noteId = parseInt(req.params.noteId)
     const note = notes.find(note => note.id === noteId)
