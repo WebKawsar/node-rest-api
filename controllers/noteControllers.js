@@ -41,7 +41,7 @@ module.exports.getNoteController = async(req, res) => {
 }
 
 module.exports.getNotesController = async(req, res) => {
-
+    console.log(req.body.random);
     try {
 
         const notes = await Note.find()
