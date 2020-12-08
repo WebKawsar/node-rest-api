@@ -3,12 +3,15 @@ const router = express.Router();
 const { check, validationResult } = require("express-validator");
 
 //Controller
-const { addUserController, getUsersController, getUserController, loginController } = require("../controllers/userController");
+const { addUserController, getUsersController, getUserController, loginController, logOutController } = require("../controllers/userController");
 
 
+//middleware
+const { auth } = require("../middleware/auth");
+const { admin } = require("../middleware/admin");
 
 
-router.get("/", getUsersController)
+router.get("/", [auth, admin], getUsersController)
 
 router.post("/",
 [
@@ -29,8 +32,8 @@ router.post("/",
 ],
 addUserController)
 
-router.get("/:id", getUserController)
+router.get("/me", auth, getUserController)
 router.post("/login", loginController)
-
+router.post("/logout", auth, logOutController)
 
 module.exports = router;

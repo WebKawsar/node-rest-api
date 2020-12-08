@@ -10,7 +10,7 @@ module.exports.addNoteController =  async(req, res) => {
     }
 
     try {
-        const note = new Note(req.body);
+        const note = new Note({...req.body, owner: req.user._id});
         await note.save();
         res.send(note);
 
@@ -28,7 +28,7 @@ module.exports.getNoteController = async(req, res) => {
     try {
 
         const id = req.params.noteId;
-        const note = await Note.findById(id);
+        const note = await Note.findById(id).populate("owner", "firstName lastName");
         if(!note) return res.status(404).send("Note Note found")
         res.send(note);
 
@@ -41,7 +41,7 @@ module.exports.getNoteController = async(req, res) => {
 }
 
 module.exports.getNotesController = async(req, res) => {
-    console.log(req.body.random);
+    
     try {
 
         const notes = await Note.find()
@@ -69,7 +69,10 @@ module.exports.updateNoteController = async(req, res) => {
 
     try {
 
-        const note = await Note.findByIdAndUpdate(id, req.body, {
+        const note = await Note.findOneAndUpdate({
+            _id: id,
+            owner: req.user._id
+        }, req.body, {
             new: true,
             runValidators: true
         })
@@ -94,7 +97,10 @@ module.exports.deleteNoteController = async(req, res) => {
 
     try {
 
-        const note = await Note.findByIdAndDelete(id)
+        const note = await Note.findOneAndDelete({
+            _id: id,
+            owner: req.user._id
+        })
         if(!note)return res.status(404).send("Note note found");
         res.send(note)
 

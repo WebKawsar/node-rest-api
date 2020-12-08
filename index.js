@@ -5,7 +5,13 @@ const Note = require("./models/notes");
 const {check, validationResult } = require("express-validator");
 const cookieParser = require("cookie-parser");
 
+//Port
+const PORT = process.env.PORT || 8080
 
+//congfig
+require('dotenv').config({
+    path: "./config/keys.env"
+})
 
 
 //db
@@ -20,14 +26,11 @@ const indexRoute = require("./routes/index");
 const usersRoute = require("./routes/users");
 
 
-function auth(req, res, next){
-    req.body.random = "Hello";
-    next();
-}
+
 //Midleware
 app.use(express.json());
-app.use(cookieParser('secretKey'))
-app.use(auth)
+app.use(cookieParser(process.env.COOKIE_SECRET))
+// app.use(auth)
 
 
 
@@ -40,6 +43,6 @@ app.use("/", indexRoute)
 
 
 // Server creation
-app.listen(8080, () => {
+app.listen(PORT, () => {
     console.log("Surver is running the port is 8080");
 })
